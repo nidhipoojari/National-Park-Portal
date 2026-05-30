@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 140 30% 5%;
+    --foreground: 60 30% 96%;
+    --muted: 140 15% 14%;
+    --muted-foreground: 140 8% 65%;
+    --card: 140 25% 8%;
+    --card-foreground: 60 30% 96%;
+    --primary: 142 45% 42%;
+    --primary-foreground: 60 30% 98%;
+    --accent: 38 88% 58%;
+    --accent-foreground: 140 50% 10%;
+    --border: 140 15% 18%;
+    --ring: 142 45% 42%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html,
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .display-stroke {
+    -webkit-text-stroke: 1px hsl(var(--foreground) / 0.9);
+    color: transparent;
+  }
+  .gradient-mask-r {
+    mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+body::-webkit-scrollbar {
+  width: 10px;
+}
+body::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+body::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 8px;
+}
