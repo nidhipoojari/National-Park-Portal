@@ -1,0 +1,25 @@
+# Environment secrets — NEVER commit these
+**/.env.local
+**/.env
+**/.env*.local
+ai/.env
+
+# Dependencies
+**/node_modules/
+**/__pycache__/
+**/*.pyc
+ai/.venv/
+
+# Build outputs
+web/.next/
+api/dist/
+api/build/
+
+# Oracle instant client / wallets
+**/instantclient*/
+**/wallet*/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/settings.json
