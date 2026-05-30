@@ -1,0 +1,79 @@
+version: "3.9"
+
+services:
+  # ── Oracle XE ────────────────────────────────────────────────
+  oracle:
+    image: gvenzl/oracle-xe:21-slim
+    container_name: oracle-xe
+    restart: unless-stopped
+    environment:
+      ORACLE_PASSWORD: devpass
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'SELECT 1 FROM DUAL;' | sqlplus -s system/devpass@localhost:1521/XEPDB1 || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 60s
+
+  # ── Express API ───────────────────────────────────────────────
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: nps-api
+    restart: unless-stopped
+    environment:
+      DB_USER: system
+      DB_PASSWORD: devpass
+      DB_CONNECTION_STRING: oracle:1521/XEPDB1
+      PORT: 4000
+    ports:
+      - "4000:4000"
+    depends_on:
+      oracle:
+        condition: service_healthy
+
+  # ── Python AI microservice ────────────────────────────────────
+  ai:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    container_name: nps-ai
+    restart: unless-stopped
+    env_file: ./ai/.env
+    environment:
+      BACKEND_API_URL: http://api:4000
+      CORS_ORIGIN: http://localhost:3000
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - api
+
+  # ── Next.js frontend ─────────────────────────────────────────
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000
+        NEXT_PUBLIC_AI_URL: http://localhost:8000
+    container_name: nps-web
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:4000
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-alicesm@opera.com}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+      - ai
+
+volumes:
+  oracle_data:

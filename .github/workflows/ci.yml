@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Frontend ─────────────────────────────────────────────────
+  web:
+    name: Next.js build & typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000
+          NEXT_PUBLIC_AI_URL: http://localhost:8000
+          NEXTAUTH_SECRET: ci-secret-placeholder
+          NEXTAUTH_URL: http://localhost:3000
+        run: npm run build
+
+  # ── Express API ───────────────────────────────────────────────
+  api:
+    name: Express API typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+  # ── Python AI service ─────────────────────────────────────────
+  ai:
+    name: Python AI syntax check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Syntax check
+        run: python -m py_compile app/main.py app/agent.py app/tools.py app/backend_client.py app/insights.py app/config.py app/llm.py
