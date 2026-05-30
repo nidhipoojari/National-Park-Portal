@@ -159,25 +159,4 @@ export default function LoginPage() {
     </PageShell>
   );
 }
-          Create an account
-        </Link>
-        . Password &amp; Google sign-in arrive in a later phase.
-      </p>
-    </div>
-  );
-}
 
-export default function LoginPage() {
-  return (
-    <PageShell
-      eyebrow="Welcome back"
-      title="Sign in to the"
-      accent="portal"
-      intro="Enter the email you registered with to access your reservations."
-    >
-      <Suspense fallback={null}>
-        <LoginForm />
-      </Suspense>
-    </PageShell>
-  );
-}
