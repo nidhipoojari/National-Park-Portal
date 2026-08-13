@@ -8,16 +8,39 @@ let pool: oracledb.Pool | null = null;
 
 export async function initPool(): Promise<void> {
   if (pool) return;
-  pool = await oracledb.createPool({
+
+  const config: oracledb.PoolAttributes = {
     user: process.env.ORACLE_USER,
     password: process.env.ORACLE_PASSWORD,
     connectString: process.env.ORACLE_CONNECT_STRING,
     poolMin: 1,
     poolMax: 10,
     poolIncrement: 1,
-  });
+  };
+
+  // Oracle Autonomous Database (cloud) support.
+  //
+  // Two connection styles work with node-oracledb's default thin mode:
+  //   1. One-way TLS — no wallet. Use the "*_high" TLS connect string from the
+  //      OCI console (tcps://...) and leave ORACLE_WALLET_DIR unset.
+  //   2. mTLS — set ORACLE_WALLET_DIR to the unzipped wallet directory (the one
+  //      holding tnsnames.ora / ewallet.pem) and use a TNS alias as the
+  //      connect string. ORACLE_WALLET_PASSWORD is required only for a
+  //      PKCS#12 (ewallet.p12) wallet.
+  const walletDir = process.env.ORACLE_WALLET_DIR;
+  if (walletDir) {
+    config.configDir = walletDir;
+    config.walletLocation = walletDir;
+    if (process.env.ORACLE_WALLET_PASSWORD) {
+      config.walletPassword = process.env.ORACLE_WALLET_PASSWORD;
+    }
+  }
+
+  pool = await oracledb.createPool(config);
   // eslint-disable-next-line no-console
-  console.log("[db] Oracle connection pool created");
+  console.log(
+    `[db] Oracle connection pool created${walletDir ? " (wallet/mTLS)" : ""}`
+  );
 }
 
 export async function closePool(): Promise<void> {

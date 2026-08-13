@@ -1,0 +1,65 @@
+# Render Blueprint — deploys the two backend services publicly so the AI
+# concierge on the live Vercel site has something to talk to.
+#
+#   Browser (Vercel)  ──>  nps-ai (FastAPI)  ──>  nps-api (Express)  ──>  Oracle ADB
+#
+# Oracle itself is NOT deployed here — it lives in Oracle Cloud Autonomous
+# Database. See DEPLOY.md for the full runbook.
+#
+# Secrets marked `sync: false` are intentionally left blank and must be filled
+# in the Render dashboard. Never commit them to this file.
+
+services:
+  # ── Express API (wraps the PL/SQL stored procedures) ──────────────
+  - type: web
+    name: nps-api
+    runtime: docker
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 4000
+      # Oracle Autonomous Database credentials — set in the dashboard.
+      # ORACLE_USER is ADMIN unless you created a separate schema user.
+      - key: ORACLE_USER
+        sync: false
+      - key: ORACLE_PASSWORD
+        sync: false
+      # One-way TLS connect string from the OCI console, e.g.
+      #   tcps://adb.us-ashburn-1.oraclecloud.com:1522/abc_npsdb_high.adb.oraclecloud.com
+      - key: ORACLE_CONNECT_STRING
+        sync: false
+      # Comma-separated browser origins allowed to call this API.
+      # Must include your production Vercel domain.
+      - key: CORS_ORIGIN
+        sync: false
+
+  # ── FastAPI AI service (LangChain concierge + admin insights) ─────
+  - type: web
+    name: nps-ai
+    runtime: docker
+    dockerfilePath: ./ai/Dockerfile
+    dockerContext: ./ai
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      # Render injects PORT; the Dockerfile CMD binds to it.
+      # Full URL of the Express service above, including scheme, e.g.
+      #   https://nps-api.onrender.com
+      # (Render's `fromService` yields host:port with no scheme, which the
+      # Python client cannot use — so set this by hand after nps-api is live.)
+      - key: BACKEND_API_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: AI_MODEL
+        value: openai/gpt-4o-mini
+      # Comma-separated browser origins — must include your Vercel domain.
+      - key: CORS_ORIGIN
+        sync: false
